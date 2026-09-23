@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"><title>品牌管理</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="module-container">
+    <h3>品牌管理</h3>
+    <div class="toolbar">
+        <div class="search-box"><input type="text" id="searchInput" placeholder="品牌名称"><button class="btn btn-info btn-sm" onclick="searchBrand()">搜索</button></div>
+        <div class="btn-group"><button class="btn btn-success btn-sm" onclick="showAdd()">添加品牌</button><button class="btn btn-danger btn-sm" onclick="batchDel()">批量删除</button></div>
+    </div>
+    <table class="data-table">
+        <thead><tr><th width="40"><input type="checkbox" id="checkAll" onclick="toggleAll()"></th><th width="60">编号</th><th>品牌名称</th><th width="160">操作</th></tr></thead>
+        <tbody id="dataBody"><tr class="empty-row"><td colspan="4">加载中...</td></tr></tbody>
+    </table>
+</div>
+<div class="modal-overlay" id="editModal">
+    <div class="modal-dialog">
+        <div class="modal-header"><h4 id="modalTitle">添加品牌</h4><button class="close-btn" onclick="closeModal()">&times;</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="editId">
+            <div class="form-group"><label>品牌名称：</label><input type="text" id="editName"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-sm" onclick="closeModal()">取消</button><button class="btn btn-primary btn-sm" onclick="saveBrand()">保存</button></div>
+    </div>
+</div>
+<script src="js/jquery-3.7.1.min.js"></script>
+<script>
+$(function(){loadBrands();});
+function loadBrands(){$.ajax({url:"/brand/list",type:"GET",success:function(res){if(res.code==-1){window.parent.location.href="/login.html";return;}renderTable(res.data);}});}
+function renderTable(list){var h="";if(list&&list.length>0){for(var i=0;i<list.length;i++){var item=list[i];h+="<tr>";h+='<td><input type="checkbox" value="'+item.id+'" class="checkItem"></td>';h+="<td>"+item.id+"</td><td>"+item.name+"</td>";h+='<td><button class="btn btn-warning btn-sm" onclick="editBrand('+item.id+',\''+item.name+'\')">修改</button>&nbsp;';h+='<button class="btn btn-danger btn-sm" onclick="delBrand('+item.id+')">删除</button></td>';h+="</tr>";}}else{h='<tr class="empty-row"><td colspan="4">暂无数据</td></tr>';}$("#dataBody").html(h);}
+function searchBrand(){alert("品牌搜索功能暂未实现");}
+function showAdd(){$("#modalTitle").text("添加品牌");$("#editId").val("");$("#editName").val("");$("#editModal").addClass("show");}
+function editBrand(id,name){$("#modalTitle").text("修改品牌");$("#editId").val(id);$("#editName").val(name);$("#editModal").addClass("show");}
+function closeModal(){$("#editModal").removeClass("show");}
+function saveBrand(){var id=$("#editId").val();var name=$("#editName").val();if(name==""){alert("请输入品牌名称");return;}alert("品牌管理仅展示，数据通过SQL初始化");closeModal();loadBrands();}
+function delBrand(id){if(!confirm("确定删除？"))return;alert("删除暂不支持");}
+function toggleAll(){var c=$("#checkAll").prop("checked");$(".checkItem").prop("checked",c);}
+function batchDel(){var ids=[];$(".checkItem:checked").each(function(){ids.push($(this).val());});if(ids.length==0){alert("请勾选记录");return;}alert("批量删除暂不支持");}
+</script>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>商品管理</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="module-container">
+        <h3>商品管理</h3>
+
+        <div class="toolbar">
+            <div class="search-box">
+                <input type="text" id="searchKeyword" placeholder="按商品名称搜索（关联映射查询）">
+                <button class="btn btn-info btn-sm" onclick="searchData()">搜 索</button>
+                <button class="btn btn-sm" onclick="loadData()" style="background:#ccc;">显示全部</button>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-success btn-sm" onclick="showAddModal()">添加商品</button>
+                <button class="btn btn-danger btn-sm" onclick="batchDelete()">批量删除</button>
+            </div>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th width="40"><input type="checkbox" id="checkAll" onclick="toggleCheckAll()"></th>
+                    <th width="50">编号</th>
+                    <th>商品名称</th>
+                    <th width="70">价格</th>
+                    <th width="50">库存</th>
+                    <th width="90">所属分类</th>
+                    <th width="180">描述</th>
+                    <th width="150">操作</th>
+                </tr>
+            </thead>
+            <tbody id="dataBody">
+                <tr class="empty-row"><td colspan="8">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 添加/修改弹窗 -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-dialog" style="width:520px;">
+            <div class="modal-header">
+                <h4 id="modalTitle">添加商品</h4>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId">
+                <div class="form-group">
+                    <label>商品名称：</label>
+                    <input type="text" id="editName" placeholder="请输入商品名称">
+                </div>
+                <table style="width:100%;">
+                    <tr>
+                        <td style="padding-right:8px;">
+                            <label>价格：</label>
+                            <input type="text" id="editPrice" placeholder="请输入价格" style="width:100%;height:36px;border:1px solid #999;padding:0 8px;">
+                        </td>
+                        <td>
+                            <label>库存：</label>
+                            <input type="text" id="editStock" placeholder="请输入库存" style="width:100%;height:36px;border:1px solid #999;padding:0 8px;">
+                        </td>
+                    </tr>
+                </table>
+                <div class="form-group">
+                    <label>所属分类：</label>
+                    <select id="editCategoryId">
+                        <option value="">请选择分类</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>描述：</label>
+                    <textarea id="editDescription" placeholder="请输入商品描述（选填）"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary btn-sm" onclick="saveData()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/jquery-3.7.1.min.js"></script>
+    <script>
+        var categoryList = [];
+
+        $(function() {
+            loadData();
+            loadCategories();
+            // console.log("商品管理页面加载完成");
+        });
+
+        function loadCategories() {
+            $.ajax({
+                url: '/category/list',
+                type: 'GET',
+                success: function(res) {
+                    if (res.code == 0 && res.data) {
+                        categoryList = res.data;
+                        var html = '<option value="">请选择分类</option>';
+                        for (var i = 0; i < res.data.length; i++) {
+                            html += '<option value="' + res.data[i].id + '">' + res.data[i].name + '</option>';
+                        }
+                        $('#editCategoryId').html(html);
+                    }
+                }
+            });
+        }
+
+        function loadData() {
+            $('#searchKeyword').val('');
+            $.ajax({
+                url: '/product/list',
+                type: 'GET',
+                success: function(res) {
+                    if (res.code == -1) {
+                        window.parent.location.href = '/login.html';
+                        return;
+                    }
+                    renderTable(res.data);
+                }
+            });
+        }
+
+        function searchData() {
+            var guanjianci = $("#searchKeyword").val();
+            console.log("搜索关键字：" + guanjianci);
+            // debugger;
+            $.ajax({
+                url: "/product/list",
+                type: "GET",
+                data: { keyword: guanjianci },
+                success: function(res) {
+                    if (res.code == -1) {
+                        window.parent.location.href = '/login.html';
+                        return;
+                    }
+                    renderTable(res.data);
+                }
+            });
+        }
+
+        function renderTable(list) {
+            var biaoHtml = "";
+            if (list && list.length > 0) {
+                for (var i = 0; i < list.length; i++) {
+                    var item = list[i];
+                    // 库存小于10就标红，但感觉没必要就没做
+                    biaoHtml += "<tr>";
+                    biaoHtml += '<td><input type="checkbox" value="' + item.id + '" class="checkItem"></td>';
+                    biaoHtml += '<td>' + item.id + '</td>';
+                    biaoHtml += '<td>' + item.name + '</td>';
+                    biaoHtml += '<td>' + item.price.toFixed(2) + '</td>';
+                    biaoHtml += '<td>' + item.stock + '</td>';
+                    biaoHtml += '<td>' + (item.categoryName || '-') + '</td>';
+                    biaoHtml += '<td>' + (item.description || '') + '</td>';
+                    biaoHtml += '<td>';
+                    biaoHtml += '<button class="btn btn-warning btn-sm" onclick="showEditModal(' + item.id + ')">修改</button>&nbsp;';
+                    biaoHtml += '<button class="btn btn-danger btn-sm" onclick="deleteOne(' + item.id + ')">删除</button>';
+                    biaoHtml += '</td>';
+                    biaoHtml += "</tr>";
+                }
+            } else {
+                biaoHtml = '<tr class="empty-row"><td colspan="8">暂无数据</td></tr>';
+            }
+            $("#dataBody").html(biaoHtml);
+        }
+
+        function showAddModal() {
+            $("#modalTitle").text("添加商品");
+            $("#editId").val("");
+            $("#editName").val("");
+            $("#editPrice").val("");
+            $("#editStock").val("");
+            $("#editCategoryId").val("");
+            $("#editDescription").val("");
+            loadCategories();
+            $("#editModal").addClass("show");
+        }
+
+        function showEditModal(id) {
+            $.ajax({
+                url: '/product/get',
+                type: 'GET',
+                data: { id: id },
+                success: function(res) {
+                    if (res.code == 0) {
+                        $('#modalTitle').text('修改商品');
+                        $('#editId').val(res.data.id);
+                        $('#editName').val(res.data.name);
+                        $('#editPrice').val(res.data.price);
+                        $('#editStock').val(res.data.stock);
+                        $('#editDescription').val(res.data.description || '');
+                        loadCategories();
+                        // 设置分类下拉的值
+                        setTimeout(function() {
+                            $('#editCategoryId').val(res.data.categoryId);
+                        }, 150);
+                        $('#editModal').addClass('show');
+                    } else {
+                        alert(res.msg);
+                    }
+                }
+            });
+        }
+
+        function closeModal() {
+            $('#editModal').removeClass('show');
+        }
+
+        function saveData() {
+            var id = $("#editId").val();
+            var name = $("#editName").val();
+            var price = $("#editPrice").val();
+            var kucun = $("#editStock").val();
+            var fenleiId = $("#editCategoryId").val();
+            var miaoshu = $("#editDescription").val();
+
+            // 空值检查
+            if (name == "") { alert("请输入商品名称"); return; }
+            if (price == "" || isNaN(price)) { alert("请输入正确的价格"); return; }
+            if (kucun == "" || isNaN(kucun)) { alert("请输入正确的库存数量"); return; }
+
+            var url = id ? "/product/update" : "/product/add";
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: {
+                    id: id,
+                    name: name,
+                    price: price,
+                    stock: kucun,
+                    categoryId: fenleiId,
+                    description: miaoshu
+                },
+                success: function(res) {
+                    if (res.code == 0) {
+                        alert(res.msg);
+                        closeModal();
+                        loadData();
+                    } else {
+                        alert(res.msg);
+                    }
+                }
+            });
+        }
+
+        function deleteOne(id) {
+            if (!confirm('确定要删除这个商品吗？')) return;
+            $.ajax({
+                url: '/product/delete',
+                type: 'POST',
+                data: { id: id },
+                success: function(res) {
+                    alert(res.msg);
+                    if (res.code == 0) loadData();
+                }
+            });
+        }
+
+        function toggleCheckAll() {
+            var checked = $('#checkAll').prop('checked');
+            $('.checkItem').prop('checked', checked);
+        }
+
+        function batchDelete() {
+            var ids = [];
+            $('.checkItem:checked').each(function() { ids.push($(this).val()); });
+            if (ids.length == 0) { alert('请先勾选要删除的记录'); return; }
+            if (!confirm('确定要删除选中的' + ids.length + '条记录吗？')) return;
+            $.ajax({
+                url: '/product/deleteBatch',
+                type: 'POST',
+                traditional: true,
+                data: { ids: ids },
+                success: function(res) {
+                    alert(res.msg);
+                    if (res.code == 0) loadData();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>购物车管理系统 - 主界面</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="main-box">
+        <!-- 左侧菜单栏 -->
+        <div class="left-menu">
+            <div class="logo">购物车管理系统</div>
+            <ul class="nav-list" id="navList">
+                <li><a href="product.html" target="mainFrame" class="active">商品管理</a></li>
+                <li><a href="base.html" target="mainFrame">基础数据管理</a></li>
+                <li><a href="cart.html" target="mainFrame">购物车管理</a></li>
+                <li><a href="order.html" target="mainFrame">订单管理</a></li>
+            </ul>
+        </div>
+
+        <!-- 右侧内容区域 -->
+        <div class="right-container">
+            <div class="top-bar">
+                <span class="user-info">欢迎您，<strong id="usernameShow">--</strong></span>
+                <a href="/user/logout">【注销退出】</a>
+            </div>
+            <div class="content-area">
+                <iframe name="mainFrame" id="mainFrame" src="product.html"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/jquery-3.7.1.min.js"></script>
+    <script>
+        $(function() {
+            $.ajax({
+                url: '/user/info',
+                type: 'GET',
+                success: function(res) {
+                    if (res.code == 0 && res.data) {
+                        $('#usernameShow').text(res.data.username);
+                    } else {
+                        window.location.href = '/login.html';
+                    }
+                },
+                error: function() {
+                    window.location.href = '/login.html';
+                }
+            });
+
+            $('#navList a').click(function() {
+                $('#navList a').removeClass('active');
+                $(this).addClass('active');
+            });
+        });
+    </script>
+</body>
+</html>

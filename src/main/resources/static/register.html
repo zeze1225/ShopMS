@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>购物车管理系统 - 注册</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h2>用户注册</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label>用户名：</label>
+                    <input type="text" name="username" id="username" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label>密　码：</label>
+                    <input type="password" name="password" id="password" placeholder="请输入密码">
+                </div>
+                <div class="form-group">
+                    <label>手机号码：</label>
+                    <input type="text" name="phone" id="phone" placeholder="请输入手机号码（选填）">
+                </div>
+                <div class="form-group">
+                    <label>地　址：</label>
+                    <input type="text" name="address" id="address" placeholder="请输入地址（选填）">
+                </div>
+                <button type="submit" class="btn btn-primary">注 册</button>
+            </form>
+            <div class="msg-tip" id="msgTip"></div>
+            <div class="register-link">
+                已有账号？<a href="login.html">返回登录</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/jquery-3.7.1.min.js"></script>
+    <script>
+        $(function() {
+            $('#registerForm').submit(function(e) {
+                e.preventDefault();
+                var username = $('#username').val();
+                var password = $('#password').val();
+                if (username == '' || password == '') {
+                    $('#msgTip').text('用户名和密码不能为空！');
+                    return;
+                }
+                $.ajax({
+                    url: '/user/register',
+                    type: 'POST',
+                    data: {
+                        username: username,
+                        password: password,
+                        phone: $('#phone').val(),
+                        address: $('#address').val()
+                    },
+                    success: function(res) {
+                        if (res.code == 0) {
+                            alert('注册成功！请登录');
+                            window.location.href = '/login.html';
+                        } else {
+                            $('#msgTip').text(res.msg);
+                        }
+                    },
+                    error: function() {
+                        alert('网络错误，请稍后重试');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

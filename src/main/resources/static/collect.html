@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"><title>我的收藏</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="module-container">
+    <h3>我的收藏</h3>
+    <table class="data-table">
+        <thead><tr><th width="60">编号</th><th width="80">商品ID</th><th width="160">收藏时间</th><th width="120">操作</th></tr></thead>
+        <tbody id="dataBody"><tr class="empty-row"><td colspan="4">加载中...</td></tr></tbody>
+    </table>
+</div>
+<script src="js/jquery-3.7.1.min.js"></script>
+<script>
+$(function(){loadCollect();});
+function loadCollect(){$.ajax({url:"/collect/list",type:"GET",success:function(res){if(res.code==-1){window.parent.location.href="/login.html";return;}var list=res.data;var h="";if(list&&list.length>0){for(var i=0;i<list.length;i++){var item=list[i];h+="<tr>";h+="<td>"+item.id+"</td><td>"+item.productId+"</td><td>"+(item.createTime||"")+"</td>";h+='<td><button class="btn btn-danger btn-sm" onclick="removeCollect('+item.productId+')">取消收藏</button></td>';h+="</tr>";}}else{h='<tr class="empty-row"><td colspan="4">暂无收藏</td></tr>';}$("#dataBody").html(h);}});}
+function removeCollect(productId){if(!confirm("取消收藏？"))return;$.ajax({url:"/collect/remove",type:"POST",data:{productId:productId},success:function(res){alert(res.msg);if(res.code==0)loadCollect();}});}
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"><title>收货地址管理</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="module-container">
+    <h3>收货地址管理</h3>
+    <div class="toolbar"><div class="btn-group"><button class="btn btn-success btn-sm" onclick="showAdd()">添加地址</button></div></div>
+    <table class="data-table">
+        <thead><tr><th width="60">编号</th><th>收货人</th><th>电话</th><th>地址</th><th width="60">默认</th><th width="120">操作</th></tr></thead>
+        <tbody id="dataBody"><tr class="empty-row"><td colspan="6">加载中...</td></tr></tbody>
+    </table>
+</div>
+<div class="modal-overlay" id="editModal">
+    <div class="modal-dialog" style="width:450px;">
+        <div class="modal-header"><h4 id="modalTitle">添加地址</h4><button class="close-btn" onclick="closeModal()">&times;</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="editId">
+            <div class="form-group"><label>收货人：</label><input type="text" id="editReceiver"></div>
+            <div class="form-group"><label>电话：</label><input type="text" id="editPhone"></div>
+            <div class="form-group"><label>地址：</label><input type="text" id="editAddress"></div>
+            <div class="form-group"><label><input type="checkbox" id="editIsDefault" value="1"> 设为默认</label></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-sm" onclick="closeModal()">取消</button><button class="btn btn-primary btn-sm" onclick="saveAddr()">保存</button></div>
+    </div>
+</div>
+<script src="js/jquery-3.7.1.min.js"></script>
+<script>
+$(function(){loadAddr();});
+function loadAddr(){$.ajax({url:"/address/list",type:"GET",success:function(res){if(res.code==-1){window.parent.location.href="/login.html";return;}var list=res.data;var h="";if(list&&list.length>0){for(var i=0;i<list.length;i++){var item=list[i];h+="<tr>";h+="<td>"+item.id+"</td><td>"+item.receiver+"</td><td>"+item.phone+"</td><td>"+item.address+"</td>";h+="<td>"+(item.isDefault==1?"是":"否")+"</td>";h+='<td><button class="btn btn-warning btn-sm" onclick="editAddr('+item.id+')">修改</button>&nbsp;';h+='<button class="btn btn-danger btn-sm" onclick="delAddr('+item.id+')">删除</button></td>';h+="</tr>";}}else{h='<tr class="empty-row"><td colspan="6">暂无地址</td></tr>';}$("#dataBody").html(h);}});}
+function showAdd(){$("#modalTitle").text("添加地址");$("#editId").val("");$("#editReceiver").val("");$("#editPhone").val("");$("#editAddress").val("");$("#editIsDefault").prop("checked",false);$("#editModal").addClass("show");}
+function editAddr(id){$.ajax({url:"/address/list",type:"GET",success:function(res){var list=res.data;for(var i=0;i<list.length;i++){if(list[i].id==id){var item=list[i];$("#modalTitle").text("修改地址");$("#editId").val(item.id);$("#editReceiver").val(item.receiver);$("#editPhone").val(item.phone);$("#editAddress").val(item.address);$("#editIsDefault").prop("checked",item.isDefault==1);$("#editModal").addClass("show");return;}}}});}
+function closeModal(){$("#editModal").removeClass("show");}
+function saveAddr(){var receiver=$("#editReceiver").val();var phone=$("#editPhone").val();var addr=$("#editAddress").val();if(!receiver||!phone||!addr){alert("请填写完整");return;}var data={id:$("#editId").val(),receiver:receiver,phone:phone,address:addr,isDefault:$("#editIsDefault").prop("checked")?1:0};$.ajax({url:"/address/save",type:"POST",data:data,success:function(res){alert(res.msg);if(res.code==0){closeModal();loadAddr();}}});}
+function delAddr(id){if(!confirm("确定删除？"))return;$.ajax({url:"/address/delete",type:"POST",data:{id:id},success:function(res){alert(res.msg);if(res.code==0)loadAddr();}});}
+</script>
+</body>
+</html>

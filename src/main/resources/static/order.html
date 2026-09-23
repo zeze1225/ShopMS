@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>订单管理</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="module-container">
+        <h3>订单管理</h3>
+
+        <div class="toolbar">
+            <div class="search-box">
+                <input type="text" id="searchKeyword" placeholder="搜索订单编号或状态">
+                <button class="btn btn-info btn-sm" onclick="searchData()">搜 索</button>
+                <button class="btn btn-sm" onclick="loadData()" style="background:#ccc;">显示全部</button>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-danger btn-sm" onclick="batchDelete()">批量删除</button>
+            </div>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th width="40"><input type="checkbox" id="checkAll" onclick="toggleCheckAll()"></th>
+                    <th width="80">订单编号</th>
+                    <th width="110">总金额</th>
+                    <th width="80">状态</th>
+                    <th width="150">下单时间</th>
+                    <th width="180">操作</th>
+                </tr>
+            </thead>
+            <tbody id="dataBody">
+                <tr class="empty-row"><td colspan="6">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 修改状态弹窗 -->
+    <div class="modal-overlay" id="statusModal">
+        <div class="modal-dialog" style="width:380px;">
+            <div class="modal-header">
+                <h4>修改订单状态</h4>
+                <button class="close-btn" onclick="$('#statusModal').removeClass('show')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="statusEditId">
+                <div class="form-group">
+                    <label>订单状态：</label>
+                    <select id="statusEditVal">
+                        <option value="待发货">待发货</option>
+                        <option value="已发货">已发货</option>
+                        <option value="已完成">已完成</option>
+                        <option value="已取消">已取消</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm" onclick="$('#statusModal').removeClass('show')">取消</button>
+                <button class="btn btn-primary btn-sm" onclick="updateStatus()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/jquery-3.7.1.min.js"></script>
+    <script>
+        $(function() {
+            loadData();
+            // console.log("订单页面加载了");
+        });
+
+        function loadData() {
+            $('#searchKeyword').val('');
+            $.ajax({
+                url: '/order/list',
+                type: 'GET',
+                success: function(res) {
+                    if (res.code == -1) {
+                        window.parent.location.href = '/login.html';
+                        return;
+                    }
+                    renderTable(res.data);
+                }
+            });
+        }
+
+        function searchData() {
+            var guanjianci = $('#searchKeyword').val();
+            $.ajax({
+                url: '/order/list',
+                type: 'GET',
+                data: { keyword: guanjianci },
+                success: function(res) {
+                    if (res.code == -1) {
+                        window.parent.location.href = '/login.html';
+                        return;
+                    }
+                    renderTable(res.data);
+                }
+            });
+        }
+
+        // 时间格式处理一下，不然显示会很奇怪
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            return timeStr.replace('T', ' ').substring(0, 19);
+        }
+
+        function renderTable(list) {
+            var biaoHtml = "";
+            if (list && list.length > 0) {
+                for (var i = 0; i < list.length; i++) {
+                    var item = list[i];
+                    biaoHtml += '<tr>';
+                    biaoHtml += '<td><input type="checkbox" value="' + item.id + '" class="checkItem"></td>';
+                    biaoHtml += '<td>' + (item.orderNo || item.id) + '</td>';
+                    biaoHtml += '<td>￥' + item.total.toFixed(2) + '</td>';
+                    biaoHtml += '<td>' + item.status + '</td>';
+                    biaoHtml += '<td>' + formatTime(item.createTime) + '</td>';
+                    biaoHtml += '<td>';
+                    biaoHtml += '<button class="btn btn-warning btn-sm" onclick="showStatusModal(' + item.id + ',\'' + item.status + '\')">修改状态</button>&nbsp;';
+                    biaoHtml += '<button class="btn btn-danger btn-sm" onclick="deleteOne(' + item.id + ')">删除</button>';
+                    biaoHtml += '</td>';
+                    biaoHtml += '</tr>';
+                }
+            } else {
+                biaoHtml = '<tr class="empty-row"><td colspan="6">暂无订单</td></tr>';
+            }
+            $('#dataBody').html(biaoHtml);
+        }
+
+        function showStatusModal(id, oldStatus) {
+            $('#statusEditId').val(id);
+            $('#statusEditVal').val(oldStatus);
+            $('#statusModal').addClass('show');
+        }
+
+        function updateStatus() {
+            var id = $('#statusEditId').val();
+            var zhuangtai = $('#statusEditVal').val();
+            $.ajax({
+                url: '/order/updateStatus',
+                type: 'POST',
+                data: { id: id, status: zhuangtai },
+                success: function(res) {
+                    alert(res.msg);
+                    if (res.code == 0) {
+                        $('#statusModal').removeClass('show');
+                        loadData();
+                    }
+                }
+            });
+        }
+
+        function deleteOne(id) {
+            if (!confirm('确定要删除这个订单吗？')) return;
+            $.ajax({
+                url: '/order/delete',
+                type: 'POST',
+                data: { id: id },
+                success: function(res) {
+                    alert(res.msg);
+                    if (res.code == 0) loadData();
+                }
+            });
+        }
+
+        function toggleCheckAll() {
+            var checked = $('#checkAll').prop('checked');
+            $('.checkItem').prop('checked', checked);
+        }
+
+        function batchDelete() {
+            var ids = [];
+            $('.checkItem:checked').each(function() { ids.push($(this).val()); });
+            if (ids.length == 0) { alert('请先勾选要删除的记录'); return; }
+            if (!confirm('确定要删除选中的' + ids.length + '条记录吗？')) return;
+            $.ajax({
+                url: '/order/deleteBatch',
+                type: 'POST',
+                traditional: true,
+                data: { ids: ids },
+                success: function(res) {
+                    alert(res.msg);
+                    if (res.code == 0) loadData();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

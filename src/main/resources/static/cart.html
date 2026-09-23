@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>购物车管理</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="module-container">
+        <h3>购物车管理</h3>
+
+        <div class="toolbar">
+            <span style="color:#999;">管理您的购物车</span>
+            <div class="btn-group">
+                <button class="btn btn-success btn-sm" onclick="showAddModal()">加入购物车</button>
+                <button class="btn btn-danger btn-sm" onclick="batchDelete()">批量删除</button>
+                <button class="btn btn-primary btn-sm" onclick="createOrder()">结算下单</button>
+            </div>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th width="40"><input type="checkbox" id="checkAll" onclick="toggleCheckAll()"></th>
+                    <th width="50">编号</th>
+                    <th>商品名称</th>
+                    <th width="70">单价</th>
+                    <th width="50">数量</th>
+                    <th width="80">小计</th>
+                    <th width="150">操作</th>
+                </tr>
+            </thead>
+            <tbody id="dataBody">
+                <tr class="empty-row"><td colspan="7">加载中...</td></tr>
+            </tbody>
+        </table>
+
+        <div style="text-align:right;margin-top:10px;font-size:15px;">
+            合计：<strong style="color:#d9534f;font-size:18px;" id="totalPrice">0.00</strong> 元
+        </div>
+    </div>
+
+    <!-- 加入购物车弹窗 -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-dialog" style="width:420px;">
+            <div class="modal-header">
+                <h4>加入购物车</h4>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>选择商品：</label>
+                    <select id="editProductId">
+                        <option value="">请选择商品</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>数　量：</label>
+                    <input type="text" id="editQuantity" placeholder="请输入数量" value="1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary btn-sm" onclick="saveData()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改数量弹窗 -->
+    <div class="modal-overlay" id="qtyModal">
+        <div class="modal-dialog" style="width:360px;">
+            <div class="modal-header">
+                <h4>修改数量</h4>
+                <button class="close-btn" onclick="$('#qtyModal').removeClass('show')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="qtyEditId">
+                <div class="form-group">
+                    <label>新数量：</label>
+                    <input type="text" id="qtyEditVal" placeholder="请输入新数量">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm" onclick="$('#qtyModal').removeClass('show')">取消</button>
+                <button class="btn btn-primary btn-sm" onclick="updateQty()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/jquery-3.7.1.min.js"></script>
+    <script>
+        $(function() {
+            // console.log("购物车页面初始化");
+            loadData();
+        });
+
+        function loadData() {
+            // debugger;
+            $.ajax({
+                url: "/cart/list",
+                type: "GET",
+                success: function(res) {
+                    if (res.code == -1) {
+                        window.parent.location.href = '/login.html';
+                        return;
+                    }
+                    renderTable(res.data);
+                }
+            });
+        }
+
+        function loadProductOptions() {
+            $.ajax({
+                url: '/product/list',
+                type: 'GET',
+                success: function(res) {
+                    if (res.code == 0 && res.data) {
+                        var html = '<option value="">请选择商品</option>';
+                        for (var i = 0; i < res.data.length; i++) {
+                            var p = res.data[i];
+                            html += '<option value="' + p.id + '">' + p.name + ' (￥' + p.price.toFixed(2) + '/库存' + p.stock + ')</option>';
+                        }
+                        $('#editProductId').html(html);
+                    }
+                }
+            });
+        }
+
+        function renderTable(list) {
+            var biaoHtml = '';
+            var zongjia = 0;
+            if (list && list.length > 0) {
+                for (var i = 0; i < list.length; i++) {
+                    var item = list[i];
+                    var pPrice = item.productPrice || 0;
+                    var pName = item.productName || '未知商品';
+                    var xiaoji = pPrice * item.quantity;
+                    zongjia += xiaoji;
+                    biaoHtml += '<tr>';
+                    biaoHtml += '<td><input type="checkbox" value="' + item.id + '" class="checkItem"></td>';
+                    biaoHtml += '<td>' + item.id + '</td>';
+                    biaoHtml += '<td>' + pName + '</td>';
+                    biaoHtml += '<td>' + pPrice.toFixed(2) + '</td>';
+                    biaoHtml += '<td>' + item.quantity + '</td>';
+                    biaoHtml += '<td>' + xiaoji.toFixed(2) + '</td>';
+                    biaoHtml += '<td>';
+                    biaoHtml += '<button class="btn btn-warning btn-sm" onclick="showQtyModal(' + item.id + ',' + item.quantity + ')">修改数量</button>&nbsp;';
+                    biaoHtml += '<button class="btn btn-danger btn-sm" onclick="deleteOne(' + item.id + ')">删除</button>';
+                    biaoHtml += '</td>';
+                    biaoHtml += '</tr>';
+                }
+            } else {
+                biaoHtml = '<tr class="empty-row"><td colspan="7">购物车是空的，快去添加商品吧</td></tr>';
+            }
+            $('#dataBody').html(biaoHtml);
+            $('#totalPrice').text(zongjia.toFixed(2));
+        }
+
+        function showAddModal() {
+            loadProductOptions();
+            $('#editQuantity').val('1');
+            $('#editModal').addClass('show');
+        }
+
+        function closeModal() {
+            $('#editModal').removeClass('show');
+        }
+
+        function saveData() {
+            var productId = $("#editProductId").val();
+            var shuliang = parseInt($("#editQuantity").val());
+            if (!productId) { alert("请选择商品"); return; }
+            if (!shuliang || shuliang <= 0) { alert("请输入有效的数量"); return; }
+
+            // console.log("加购：商品" + productId + "，数量" + shuliang);
+            $.ajax({
+                url: "/cart/add",
+                type: "POST",
+                data: { productId: productId, quantity: shuliang },
+                success: function(res) {
+                    alert(res.msg);
+                    if (res.code == 0) {
+                        closeModal();
+                        loadData();
+                    }
+                }
+            });
+        }
+
+        function showQtyModal(id, oldQty) {
+            $('#qtyEditId').val(id);
+            $('#qtyEditVal').val(oldQty);
+            $('#qtyModal').addClass('show');
+        }
+
+        function updateQty() {
+            var id = $('#qtyEditId').val();
+            var shuliang = parseInt($('#qtyEditVal').val());
+            if (!shuliang || shuliang <= 0) { alert('请输入有效的数量'); return; }
+
+            $.ajax({
+                url: '/cart/update',
+                type: 'POST',
+                data: { id: id, quantity: shuliang },
+                success: function(res) {
+                    alert(res.msg);
+                    if (res.code == 0) {
+                        $('#qtyModal').removeClass('show');
+                        loadData();
+                    }
+                }
+            });
+        }
+
+        function deleteOne(id) {
+            if (!confirm('确定要删除这条购物车记录吗？')) return;
+            $.ajax({
+                url: '/cart/delete',
+                type: 'POST',
+                data: { id: id },
+                success: function(res) {
+                    alert(res.msg);
+                    if (res.code == 0) loadData();
+                }
+            });
+        }
+
+        function toggleCheckAll() {
+            var checked = $('#checkAll').prop('checked');
+            $('.checkItem').prop('checked', checked);
+        }
+
+        function batchDelete() {
+            var ids = [];
+            $('.checkItem:checked').each(function() { ids.push($(this).val()); });
+            if (ids.length == 0) { alert('请先勾选要删除的记录'); return; }
+            if (!confirm('确定要删除选中的' + ids.length + '条记录吗？')) return;
+            $.ajax({
+                url: '/cart/deleteBatch',
+                type: 'POST',
+                traditional: true,
+                data: { ids: ids },
+                success: function(res) {
+                    alert(res.msg);
+                    if (res.code == 0) loadData();
+                }
+            });
+        }
+
+        // 结算，把购物车里的东西变成订单
+        function createOrder() {
+            if (!confirm("确定要结算购物车并生成订单吗？")) return;
+            // console.log("开始创建订单...");
+            $.ajax({
+                url: "/order/create",
+                type: "POST",
+                success: function(res) {
+                    alert(res.msg);
+                    if (res.code == 0) loadData();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>购物车管理系统 - 登录</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h2>购物车信息管理系统</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>用户名：</label>
+                    <input type="text" name="username" id="username" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label>密　码：</label>
+                    <input type="password" name="password" id="password" placeholder="请输入密码">
+                </div>
+                <button type="submit" class="btn btn-primary">登 录</button>
+            </form>
+            <div class="msg-tip" id="msgTip"></div>
+            <div class="register-link">
+                还没有账号？<a href="register.html">点此注册</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/jquery-3.7.1.min.js"></script>
+    <script>
+        $(function() {
+            $('#loginForm').submit(function(e) {
+                e.preventDefault();
+                var username = $('#username').val();
+                var password = $('#password').val();
+                if (username == '' || password == '') {
+                    $('#msgTip').text('请输入用户名和密码！');
+                    return;
+                }
+                // 发送ajax登录请求
+                $.ajax({
+                    url: '/user/login',
+                    type: 'POST',
+                    data: {
+                        username: username,
+                        password: password
+                    },
+                    success: function(res) {
+                        if (res.code == 0) {
+                            window.location.href = '/main.html';
+                        } else {
+                            $('#msgTip').text(res.msg);
+                        }
+                    },
+                    error: function() {
+                        alert('网络错误，请稍后重试');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
