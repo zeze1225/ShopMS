@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import com.example.shoppingcart.entity.Category;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.shoppingcart.service.CategoryService;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;

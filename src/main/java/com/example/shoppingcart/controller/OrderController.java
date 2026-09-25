@@ -6,7 +6,7 @@ import com.example.shoppingcart.entity.Order;
 import com.example.shoppingcart.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.shoppingcart.service.OrderService;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;

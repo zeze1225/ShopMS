@@ -6,7 +6,7 @@ import org.springframework.stereotype.Controller;
 import com.example.shoppingcart.service.CartService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
