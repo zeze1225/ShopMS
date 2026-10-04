@@ -1,0 +1,30 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  # SQLite数据库配置（文件存储在项目data目录下）
+  datasource:
+    url: jdbc:sqlite:./data/shopping.db
+    driver-class-name: org.sqlite.JDBC
+    username:
+    password:
+  # SQL初始化
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+
+# MyBatis配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.shoppingcart.entity
+  configuration:
+    # 开启驼峰命名转换（数据库下划线 -> Java驼峰）
+    map-underscore-to-camel-case: true
