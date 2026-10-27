@@ -20,6 +20,8 @@ spring:
       encoding: UTF-8
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql
+  profiles:
+    active: local
 
 # MyBatis配置
 mybatis:
